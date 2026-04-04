@@ -1,0 +1,31 @@
+name: mood_playlist_app
+description: Mood Playlist MVP
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+  dio: ^5.5.0+1
+  flutter_secure_storage: ^9.2.2
+  sign_in_with_apple: ^6.1.1
+  google_sign_in: ^6.2.1
+  kakao_flutter_sdk_user: ^1.9.5
+  share_plus: ^10.0.2
+  url_launcher: ^6.3.0
+  table_calendar: ^3.1.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
