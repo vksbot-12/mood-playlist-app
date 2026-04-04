@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mood_playlist_app/features/home/presentation/viewmodel/home_view_model.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -34,6 +35,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             FilledButton(
               onPressed: () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
               child: const Text('추천 받기'),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                OutlinedButton(onPressed: () => context.push('/calendar'), child: const Text('캘린더')),
+                const SizedBox(width: 8),
+                OutlinedButton(onPressed: () => context.push('/subscription'), child: const Text('구독')),
+              ],
             ),
             const SizedBox(height: 16),
             Expanded(
