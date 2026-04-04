@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mood_playlist_app/features/home/presentation/viewmodel/home_view_model.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   final _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(homeViewModelProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('오늘의 감정')),
       body: Padding(
@@ -29,9 +32,32 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () {},
+              onPressed: () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
               child: const Text('추천 받기'),
             ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: state.when(
+                data: (data) {
+                  if (data == null) return const Center(child: Text('추천 결과가 여기에 표시됩니다.'));
+                  final list = ((data['data']?['candidates']) ?? []) as List;
+                  return ListView.builder(
+                    itemCount: list.length,
+                    itemBuilder: (context, index) {
+                      final item = list[index] as Map<String, dynamic>;
+                      return Card(
+                        child: ListTile(
+                          title: Text('${item['rank']}. ${item['title']}'),
+                          subtitle: Text(item['reason']?.toString() ?? ''),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('오류: $e')),
+              ),
+            )
           ],
         ),
       ),
