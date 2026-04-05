@@ -61,17 +61,43 @@ class _HomePageState extends ConsumerState<HomePage> {
                 data: (data) {
                   if (data == null) return const Center(child: Text('추천 결과가 여기에 표시됩니다.'));
                   final list = ((data['data']?['candidates']) ?? []) as List;
-                  return ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final item = list[index] as Map<String, dynamic>;
-                      return Card(
-                        child: ListTile(
-                          title: Text('${item['rank']}. ${item['title']}'),
-                          subtitle: Text(item['reason']?.toString() ?? ''),
+                  final freeRemaining = (data['data']?['freeRemaining'] as num?)?.toInt();
+                  final exhausted = (freeRemaining ?? 0) <= 0;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (freeRemaining != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Chip(label: Text('무료 잔여 $freeRemaining회')),
+                              if (exhausted) ...[
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: () => context.push('/subscription'),
+                                  child: const Text('구독 안내 보기'),
+                                ),
+                              ]
+                            ],
+                          ),
                         ),
-                      );
-                    },
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (context, index) {
+                            final item = list[index] as Map<String, dynamic>;
+                            return Card(
+                              child: ListTile(
+                                title: Text('${item['rank']}. ${item['title']}'),
+                                subtitle: Text(item['reason']?.toString() ?? ''),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
