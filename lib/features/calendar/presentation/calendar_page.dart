@@ -13,38 +13,46 @@ class CalendarPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('감정 캘린더')),
-      body: state.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('오류: $e')),
-        data: (data) {
-          return Column(
-            children: [
-              TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: data.focusedMonth,
-                selectedDayPredicate: (day) => isSameDay(day, data.selectedDate),
-                onPageChanged: (day) {
-                  ref.read(calendarViewModelProvider.notifier).onPageChanged(day);
-                },
-                onDaySelected: (selectedDay, _) {
-                  ref.read(calendarViewModelProvider.notifier).onDaySelected(selectedDay);
-                },
-                eventLoader: (day) {
-                  final normalized = DateTime(day.year, day.month, day.day);
-                  final count = data.countsByDate[normalized] ?? 0;
-                  return count > 0 ? List.filled(count, 'entry') : const [];
-                },
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: data.dayItems.isEmpty
+      body: Column(
+        children: [
+          if (state.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text('오류: ${state.errorMessage}', style: const TextStyle(color: Colors.redAccent)),
+            ),
+          TableCalendar(
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: state.focusedMonth,
+            selectedDayPredicate: (day) => isSameDay(day, state.selectedDate),
+            onPageChanged: (day) {
+              ref.read(calendarViewModelProvider.notifier).onPageChanged(day);
+            },
+            onDaySelected: (selectedDay, _) {
+              ref.read(calendarViewModelProvider.notifier).onDaySelected(selectedDay);
+            },
+            eventLoader: (day) {
+              final normalized = DateTime(day.year, day.month, day.day);
+              final count = state.countsByDate[normalized] ?? 0;
+              return count > 0 ? List.filled(count, 'entry') : const [];
+            },
+          ),
+          if (state.isMonthLoading)
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: state.isDayLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.dayItems.isEmpty
                     ? const Center(child: Text('선택한 날짜의 감정 기록이 없습니다.'))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: data.dayItems.length,
+                        itemCount: state.dayItems.length,
                         itemBuilder: (context, index) {
-                          final item = data.dayItems[index];
+                          final item = state.dayItems[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             child: Padding(
@@ -65,6 +73,11 @@ class CalendarPage extends ConsumerWidget {
                                         title: Text(
                                           '${candidate.rank}. ${candidate.title}',
                                           maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          '${candidate.reason}\n${candidate.emotionLink}',
+                                          maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         trailing: const Icon(Icons.open_in_new, size: 18),
@@ -95,10 +108,8 @@ class CalendarPage extends ConsumerWidget {
                           );
                         },
                       ),
-              ),
-            ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

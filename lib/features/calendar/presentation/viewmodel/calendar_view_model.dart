@@ -3,38 +3,52 @@ import 'package:mood_playlist_app/features/home/data/recommendation_repository.d
 import 'package:mood_playlist_app/features/home/presentation/viewmodel/home_view_model.dart';
 
 final calendarViewModelProvider =
-    StateNotifierProvider<CalendarViewModel, AsyncValue<CalendarUiState>>(
+    StateNotifierProvider<CalendarViewModel, CalendarUiState>(
   (ref) => CalendarViewModel(ref.watch(recommendationRepositoryProvider))..initialize(),
 );
 
-class CalendarViewModel extends StateNotifier<AsyncValue<CalendarUiState>> {
-  CalendarViewModel(this._repository) : super(const AsyncValue.loading());
+class CalendarViewModel extends StateNotifier<CalendarUiState> {
+  CalendarViewModel(this._repository)
+      : super(
+          CalendarUiState(
+            focusedMonth: DateTime.now(),
+            selectedDate: DateTime.now(),
+            countsByDate: const {},
+            dayItems: const [],
+            isMonthLoading: true,
+            isDayLoading: true,
+          ),
+        );
 
   final RecommendationRepository _repository;
 
   Future<void> initialize() async {
     final now = DateTime.now();
-    await _load(now, now);
+    final month = DateTime(now.year, now.month, 1);
+    state = state.copyWith(focusedMonth: month, selectedDate: now);
+    await _loadMonth(month);
+    await _loadDay(now);
   }
 
   Future<void> onPageChanged(DateTime focusedMonth) async {
-    final selectedDate = state.value?.selectedDate ?? focusedMonth;
-    await _load(DateTime(focusedMonth.year, focusedMonth.month, 1), selectedDate);
+    final month = DateTime(focusedMonth.year, focusedMonth.month, 1);
+    state = state.copyWith(focusedMonth: month, isMonthLoading: true, errorMessage: null);
+    await _loadMonth(month);
   }
 
   Future<void> onDaySelected(DateTime selectedDate) async {
-    final focusedMonth = state.value?.focusedMonth ?? DateTime(selectedDate.year, selectedDate.month, 1);
-    await _load(focusedMonth, selectedDate);
+    state = state.copyWith(
+      selectedDate: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+      isDayLoading: true,
+      errorMessage: null,
+    );
+    await _loadDay(selectedDate);
   }
 
-  Future<void> _load(DateTime focusedMonth, DateTime selectedDate) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+  Future<void> _loadMonth(DateTime focusedMonth) async {
+    try {
       final monthRes = await _repository.fetchCalendar(focusedMonth.year, focusedMonth.month);
-      final dayRes = await _repository.fetchDayDetail(selectedDate);
-
       final daysRaw = monthRes['data']?['days'] as Map<String, dynamic>? ?? {};
-      final dayItemsRaw = dayRes['data']?['items'] as List<dynamic>? ?? [];
 
       final countsByDate = <DateTime, int>{};
       daysRaw.forEach((key, value) {
@@ -44,11 +58,24 @@ class CalendarViewModel extends StateNotifier<AsyncValue<CalendarUiState>> {
         }
       });
 
+      state = state.copyWith(countsByDate: countsByDate, isMonthLoading: false);
+    } catch (e) {
+      state = state.copyWith(isMonthLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> _loadDay(DateTime selectedDate) async {
+    try {
+      final dayRes = await _repository.fetchDayDetail(selectedDate);
+      final dayItemsRaw = dayRes['data']?['items'] as List<dynamic>? ?? [];
+
       final dayItems = dayItemsRaw.whereType<Map<String, dynamic>>().map((e) {
         final candidates = (e['candidates'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map((c) {
           return CandidateUiItem(
             rank: (c['rank'] as num?)?.toInt() ?? 0,
             title: c['title']?.toString() ?? '',
+            reason: c['reason']?.toString() ?? '',
+            emotionLink: c['emotionLink']?.toString() ?? '',
             youtubeUrl: c['youtubeUrl']?.toString(),
             youtubeQuery: c['youtubeQuery']?.toString(),
           );
@@ -61,13 +88,10 @@ class CalendarViewModel extends StateNotifier<AsyncValue<CalendarUiState>> {
         );
       }).toList();
 
-      return CalendarUiState(
-        focusedMonth: DateTime(focusedMonth.year, focusedMonth.month, 1),
-        selectedDate: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-        countsByDate: countsByDate,
-        dayItems: dayItems,
-      );
-    });
+      state = state.copyWith(dayItems: dayItems, isDayLoading: false);
+    } catch (e) {
+      state = state.copyWith(isDayLoading: false, errorMessage: e.toString());
+    }
   }
 }
 
@@ -77,12 +101,38 @@ class CalendarUiState {
     required this.selectedDate,
     required this.countsByDate,
     required this.dayItems,
+    this.isMonthLoading = false,
+    this.isDayLoading = false,
+    this.errorMessage,
   });
 
   final DateTime focusedMonth;
   final DateTime selectedDate;
   final Map<DateTime, int> countsByDate;
   final List<DayDetailUiItem> dayItems;
+  final bool isMonthLoading;
+  final bool isDayLoading;
+  final String? errorMessage;
+
+  CalendarUiState copyWith({
+    DateTime? focusedMonth,
+    DateTime? selectedDate,
+    Map<DateTime, int>? countsByDate,
+    List<DayDetailUiItem>? dayItems,
+    bool? isMonthLoading,
+    bool? isDayLoading,
+    String? errorMessage,
+  }) {
+    return CalendarUiState(
+      focusedMonth: focusedMonth ?? this.focusedMonth,
+      selectedDate: selectedDate ?? this.selectedDate,
+      countsByDate: countsByDate ?? this.countsByDate,
+      dayItems: dayItems ?? this.dayItems,
+      isMonthLoading: isMonthLoading ?? this.isMonthLoading,
+      isDayLoading: isDayLoading ?? this.isDayLoading,
+      errorMessage: errorMessage,
+    );
+  }
 }
 
 class DayDetailUiItem {
@@ -101,12 +151,16 @@ class CandidateUiItem {
   const CandidateUiItem({
     required this.rank,
     required this.title,
+    required this.reason,
+    required this.emotionLink,
     this.youtubeUrl,
     this.youtubeQuery,
   });
 
   final int rank;
   final String title;
+  final String reason;
+  final String emotionLink;
   final String? youtubeUrl;
   final String? youtubeQuery;
 
