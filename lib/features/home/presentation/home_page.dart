@@ -49,9 +49,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                 alignment: Alignment.centerLeft,
                 child: Text('무료 잔여 조회 중...'),
               ),
-              error: (_, __) => const Align(
+              error: (_, __) => Align(
                 alignment: Alignment.centerLeft,
-                child: Text('무료 잔여 조회 실패'),
+                child: Row(
+                  children: [
+                    const Text('무료 잔여 조회 실패'),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => ref.read(homeViewModelProvider.notifier).refreshQuota(),
+                      child: const Text('다시 시도'),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
