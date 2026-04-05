@@ -75,7 +75,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('오류: $e')),
+                error: (e, _) {
+                  final message = e.toString();
+                  final isQuotaExhausted = message.contains('quota exhausted');
+
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('오류: $message', textAlign: TextAlign.center),
+                        if (isQuotaExhausted) ...[
+                          const SizedBox(height: 12),
+                          FilledButton(
+                            onPressed: () => context.push('/subscription'),
+                            child: const Text('구독하러 가기'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
             )
           ],
