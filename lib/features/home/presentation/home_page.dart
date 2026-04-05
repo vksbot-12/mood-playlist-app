@@ -20,6 +20,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final recommendationState = state.recommendationState;
     final quotaState = state.quotaState;
     final isRecommending = recommendationState.isLoading;
+    final isQuotaLoading = quotaState.isLoading;
+    final canRecommend = !isRecommending && !isQuotaLoading;
 
     return Scaffold(
       appBar: AppBar(title: const Text('오늘의 감정')),
@@ -56,7 +58,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const Text('무료 잔여 조회 실패'),
                     const SizedBox(width: 8),
                     TextButton(
-                      onPressed: () => ref.read(homeViewModelProvider.notifier).refreshQuota(),
+                      onPressed: isQuotaLoading
+                          ? null
+                          : () => ref.read(homeViewModelProvider.notifier).refreshQuota(),
                       child: const Text('다시 시도'),
                     ),
                   ],
@@ -65,16 +69,16 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: isRecommending
-                  ? null
-                  : () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
+              onPressed: canRecommend
+                  ? () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text)
+                  : null,
               child: isRecommending
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('추천 받기'),
+                  : Text(isQuotaLoading ? '잔여 횟수 확인 중...' : '추천 받기'),
             ),
             const SizedBox(height: 8),
             Row(
