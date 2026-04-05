@@ -19,4 +19,10 @@ class RecommendationRepository {
     final res = await dio.get('/api/v1/recommendations/$moodLogId/share');
     return res.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> fetchDayDetail(DateTime date) async {
+    final isoDate = date.toIso8601String().split('T').first;
+    final res = await dio.get('/api/v1/recommendations/calendar/day', queryParameters: {'date': isoDate});
+    return res.data as Map<String, dynamic>;
+  }
 }

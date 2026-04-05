@@ -1,48 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mood_playlist_app/features/home/data/recommendation_repository.dart';
-import 'package:mood_playlist_app/features/home/presentation/viewmodel/home_view_model.dart';
+import 'package:mood_playlist_app/features/calendar/presentation/viewmodel/calendar_view_model.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-final calendarProvider = FutureProvider.family<Map<String, dynamic>, DateTime>((ref, month) async {
-  final repo = ref.watch(recommendationRepositoryProvider);
-  return repo.fetchCalendar(month.year, month.month);
-});
-
-class CalendarPage extends ConsumerStatefulWidget {
+class CalendarPage extends ConsumerWidget {
   const CalendarPage({super.key});
 
   @override
-  ConsumerState<CalendarPage> createState() => _CalendarPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(calendarViewModelProvider);
 
-class _CalendarPageState extends ConsumerState<CalendarPage> {
-  DateTime focused = DateTime.now();
-
-  @override
-  Widget build(BuildContext context) {
-    final monthData = ref.watch(calendarProvider(focused));
     return Scaffold(
       appBar: AppBar(title: const Text('감정 캘린더')),
-      body: Column(
-        children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: focused,
-            onPageChanged: (d) => setState(() => focused = d),
-          ),
-          Expanded(
-            child: monthData.when(
-              data: (data) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('월 데이터: ${data['data']?['days'] ?? {}}'),
+      body: state.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('오류: $e')),
+        data: (data) {
+          return Column(
+            children: [
+              TableCalendar(
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
+                focusedDay: data.focusedMonth,
+                selectedDayPredicate: (day) => isSameDay(day, data.selectedDate),
+                onPageChanged: (day) {
+                  ref.read(calendarViewModelProvider.notifier).onPageChanged(day);
+                },
+                onDaySelected: (selectedDay, _) {
+                  ref.read(calendarViewModelProvider.notifier).onDaySelected(selectedDay);
+                },
+                eventLoader: (day) {
+                  final normalized = DateTime(day.year, day.month, day.day);
+                  final count = data.countsByDate[normalized] ?? 0;
+                  return count > 0 ? List.filled(count, 'entry') : const [];
+                },
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('오류: $e')),
-            ),
-          )
-        ],
+              const SizedBox(height: 8),
+              Expanded(
+                child: data.dayItems.isEmpty
+                    ? const Center(child: Text('선택한 날짜의 감정 기록이 없습니다.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: data.dayItems.length,
+                        itemBuilder: (context, index) {
+                          final item = data.dayItems[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.moodText, style: Theme.of(context).textTheme.titleMedium),
+                                  const SizedBox(height: 6),
+                                  Text(item.createdAt, style: Theme.of(context).textTheme.bodySmall),
+                                  const SizedBox(height: 10),
+                                  ...item.candidates.map(
+                                    (candidate) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Text(
+                                        '${candidate['rank']}. ${candidate['title']}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
