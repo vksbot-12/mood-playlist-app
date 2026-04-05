@@ -12,6 +12,18 @@ final homeViewModelProvider = StateNotifierProvider<HomeViewModel, HomeUiState>(
   (ref) => HomeViewModel(ref.watch(recommendationRepositoryProvider))..initialize(),
 );
 
+String mapRecommendationErrorMessage(String? code) {
+  switch (code) {
+    case 'BAD_STATE':
+      return '무료 횟수를 모두 사용했습니다. 구독 후 계속 이용할 수 있어요.';
+    case 'BAD_REQUEST':
+    case 'VALIDATION_ERROR':
+      return '입력값을 확인한 뒤 다시 시도해주세요.';
+    default:
+      return '추천을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.';
+  }
+}
+
 class HomeViewModel extends StateNotifier<HomeUiState> {
   HomeViewModel(this._repository)
       : super(const HomeUiState(
@@ -55,7 +67,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
       state = state.copyWith(
         recommendationState: AsyncValue.error(e, st),
         recommendationErrorCode: code,
-        recommendationErrorMessage: _toUserMessage(code),
+        recommendationErrorMessage: mapRecommendationErrorMessage(code),
       );
     }
 
@@ -79,17 +91,6 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     return null;
   }
 
-  String _toUserMessage(String? code) {
-    switch (code) {
-      case 'BAD_STATE':
-        return '무료 횟수를 모두 사용했습니다. 구독 후 계속 이용할 수 있어요.';
-      case 'BAD_REQUEST':
-      case 'VALIDATION_ERROR':
-        return '입력값을 확인한 뒤 다시 시도해주세요.';
-      default:
-        return '추천을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.';
-    }
-  }
 }
 
 class HomeUiState {
