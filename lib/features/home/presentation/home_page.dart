@@ -39,33 +39,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
             const SizedBox(height: 12),
-            quotaState.when(
-              data: (remaining) => Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  remaining == null ? '무료 잔여 횟수 확인 불가' : '현재 무료 잔여: $remaining회',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-              loading: () => const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('무료 잔여 조회 중...'),
-              ),
-              error: (_, __) => Align(
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    const Text('무료 잔여 조회 실패'),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: isQuotaLoading
-                          ? null
-                          : () => ref.read(homeViewModelProvider.notifier).refreshQuota(),
-                      child: const Text('다시 시도'),
-                    ),
-                  ],
-                ),
-              ),
+            _QuotaStatusCard(
+              quotaState: quotaState,
+              onRetry: () => ref.read(homeViewModelProvider.notifier).refreshQuota(),
             ),
             const SizedBox(height: 12),
             FilledButton(
@@ -167,6 +143,53 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuotaStatusCard extends StatelessWidget {
+  const _QuotaStatusCard({
+    required this.quotaState,
+    required this.onRetry,
+  });
+
+  final AsyncValue<int?> quotaState;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: quotaState.when(
+          data: (remaining) => Row(
+            children: [
+              const Icon(Icons.bolt, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  remaining == null ? '무료 잔여 횟수 확인 불가' : '현재 무료 잔여: $remaining회',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          loading: () => const Row(
+            children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 8),
+              Text('무료 잔여 조회 중...'),
+            ],
+          ),
+          error: (_, __) => Row(
+            children: [
+              const Expanded(child: Text('무료 잔여 조회 실패')),
+              TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+            ],
+          ),
         ),
       ),
     );
