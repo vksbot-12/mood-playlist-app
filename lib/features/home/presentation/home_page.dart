@@ -86,20 +86,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (freeRemaining != null)
+                      if (exhausted)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              Chip(label: Text('무료 잔여 $freeRemaining회')),
-                              if (exhausted) ...[
-                                const SizedBox(width: 8),
-                                TextButton(
-                                  onPressed: () => context.push('/subscription'),
-                                  child: const Text('구독 안내 보기'),
-                                ),
-                              ]
-                            ],
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push('/subscription'),
+                            icon: const Icon(Icons.workspace_premium),
+                            label: const Text('무료 횟수 소진됨 · 구독 안내 보기'),
                           ),
                         ),
                       Expanded(
