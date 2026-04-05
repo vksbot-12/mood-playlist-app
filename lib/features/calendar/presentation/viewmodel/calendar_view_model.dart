@@ -44,17 +44,22 @@ class CalendarViewModel extends StateNotifier<AsyncValue<CalendarUiState>> {
         }
       });
 
-      final dayItems = dayItemsRaw
-          .whereType<Map<String, dynamic>>()
-          .map(
-            (e) => DayDetailUiItem(
-              moodText: e['moodText']?.toString() ?? '',
-              createdAt: e['createdAt']?.toString() ?? '',
-              candidates:
-                  (e['candidates'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList(),
-            ),
-          )
-          .toList();
+      final dayItems = dayItemsRaw.whereType<Map<String, dynamic>>().map((e) {
+        final candidates = (e['candidates'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map((c) {
+          return CandidateUiItem(
+            rank: (c['rank'] as num?)?.toInt() ?? 0,
+            title: c['title']?.toString() ?? '',
+            youtubeUrl: c['youtubeUrl']?.toString(),
+            youtubeQuery: c['youtubeQuery']?.toString(),
+          );
+        }).toList();
+
+        return DayDetailUiItem(
+          moodText: e['moodText']?.toString() ?? '',
+          createdAt: e['createdAt']?.toString() ?? '',
+          candidates: candidates,
+        );
+      }).toList();
 
       return CalendarUiState(
         focusedMonth: DateTime(focusedMonth.year, focusedMonth.month, 1),
@@ -89,5 +94,33 @@ class DayDetailUiItem {
 
   final String moodText;
   final String createdAt;
-  final List<Map<String, dynamic>> candidates;
+  final List<CandidateUiItem> candidates;
+}
+
+class CandidateUiItem {
+  const CandidateUiItem({
+    required this.rank,
+    required this.title,
+    this.youtubeUrl,
+    this.youtubeQuery,
+  });
+
+  final int rank;
+  final String title;
+  final String? youtubeUrl;
+  final String? youtubeQuery;
+
+  Uri? launchUri() {
+    final rawUrl = youtubeUrl?.trim();
+    if (rawUrl != null && rawUrl.isNotEmpty) {
+      return Uri.tryParse(rawUrl);
+    }
+
+    final query = youtubeQuery?.trim();
+    if (query != null && query.isNotEmpty) {
+      return Uri.https('www.youtube.com', '/results', {'search_query': query});
+    }
+
+    return null;
+  }
 }
