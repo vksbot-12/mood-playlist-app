@@ -48,7 +48,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   onPressed: () async {
                     final text = await ref.read(homeViewModelProvider.notifier).fetchShareContent();
                     if (text != null && context.mounted) {
-                      SharePlus.instance.share(ShareParams(text: text));
+                      Share.share(text);
                     }
                   },
                   child: const Text('공유'),
