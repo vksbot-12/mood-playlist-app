@@ -17,7 +17,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
-    final quotaState = ref.watch(myQuotaProvider);
+    final recommendationState = state.recommendationState;
+    final quotaState = state.quotaState;
 
     return Scaffold(
       appBar: AppBar(title: const Text('오늘의 감정')),
@@ -54,10 +55,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () async {
-                await ref.read(homeViewModelProvider.notifier).recommend(_controller.text);
-                ref.invalidate(myQuotaProvider);
-              },
+              onPressed: () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
               child: const Text('추천 받기'),
             ),
             const SizedBox(height: 8),
@@ -80,7 +78,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: state.when(
+              child: recommendationState.when(
                 data: (data) {
                   if (data == null) return const Center(child: Text('추천 결과가 여기에 표시됩니다.'));
                   final list = ((data['data']?['candidates']) ?? []) as List;
