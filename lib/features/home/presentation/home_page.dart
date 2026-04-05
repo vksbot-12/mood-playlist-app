@@ -19,6 +19,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final state = ref.watch(homeViewModelProvider);
     final recommendationState = state.recommendationState;
     final quotaState = state.quotaState;
+    final isRecommending = recommendationState.isLoading;
 
     return Scaffold(
       appBar: AppBar(title: const Text('오늘의 감정')),
@@ -55,8 +56,16 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
-              child: const Text('추천 받기'),
+              onPressed: isRecommending
+                  ? null
+                  : () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
+              child: isRecommending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('추천 받기'),
             ),
             const SizedBox(height: 8),
             Row(
