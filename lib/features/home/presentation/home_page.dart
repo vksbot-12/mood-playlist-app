@@ -123,15 +123,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) {
-                  final message = e.toString();
-                  final isQuotaExhausted =
-                      state.recommendationErrorCode == 'BAD_STATE' && message.contains('quota exhausted');
+                  final message = state.recommendationErrorMessage ?? '오류: $e';
+                  final isQuotaExhausted = state.recommendationErrorCode == 'BAD_STATE';
 
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('오류: $message', textAlign: TextAlign.center),
+                        Text(message, textAlign: TextAlign.center),
                         if (isQuotaExhausted) ...[
                           const SizedBox(height: 12),
                           FilledButton(

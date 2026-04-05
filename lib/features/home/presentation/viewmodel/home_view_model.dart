@@ -18,6 +18,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
           recommendationState: AsyncValue.data(null),
           quotaState: AsyncValue.loading(),
           recommendationErrorCode: null,
+          recommendationErrorMessage: null,
         ));
 
   final RecommendationRepository _repository;
@@ -39,6 +40,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     state = state.copyWith(
       recommendationState: const AsyncValue.loading(),
       recommendationErrorCode: null,
+      recommendationErrorMessage: null,
     );
 
     try {
@@ -46,11 +48,14 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
       state = state.copyWith(
         recommendationState: AsyncValue.data(data),
         recommendationErrorCode: null,
+        recommendationErrorMessage: null,
       );
     } catch (e, st) {
+      final code = _extractApiErrorCode(e);
       state = state.copyWith(
         recommendationState: AsyncValue.error(e, st),
-        recommendationErrorCode: _extractApiErrorCode(e),
+        recommendationErrorCode: code,
+        recommendationErrorMessage: _toUserMessage(code),
       );
     }
 
@@ -64,7 +69,6 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     final res = await _repository.fetchShareData(moodLogId as int);
     return res['data']?['content']?.toString();
   }
-}
 
   String? _extractApiErrorCode(Object error) {
     if (error is! DioException) return null;
@@ -74,6 +78,18 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     }
     return null;
   }
+
+  String _toUserMessage(String? code) {
+    switch (code) {
+      case 'BAD_STATE':
+        return '무료 횟수를 모두 사용했습니다. 구독 후 계속 이용할 수 있어요.';
+      case 'BAD_REQUEST':
+      case 'VALIDATION_ERROR':
+        return '입력값을 확인한 뒤 다시 시도해주세요.';
+      default:
+        return '추천을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.';
+    }
+  }
 }
 
 class HomeUiState {
@@ -81,6 +97,7 @@ class HomeUiState {
     required this.recommendationState,
     required this.quotaState,
     required this.recommendationErrorCode,
+    required this.recommendationErrorMessage,
   });
 
   static const _noChange = Object();
@@ -88,11 +105,13 @@ class HomeUiState {
   final AsyncValue<Map<String, dynamic>?> recommendationState;
   final AsyncValue<int?> quotaState;
   final String? recommendationErrorCode;
+  final String? recommendationErrorMessage;
 
   HomeUiState copyWith({
     AsyncValue<Map<String, dynamic>?>? recommendationState,
     AsyncValue<int?>? quotaState,
     Object? recommendationErrorCode = _noChange,
+    Object? recommendationErrorMessage = _noChange,
   }) {
     return HomeUiState(
       recommendationState: recommendationState ?? this.recommendationState,
@@ -100,6 +119,9 @@ class HomeUiState {
       recommendationErrorCode: recommendationErrorCode == _noChange
           ? this.recommendationErrorCode
           : recommendationErrorCode as String?,
+      recommendationErrorMessage: recommendationErrorMessage == _noChange
+          ? this.recommendationErrorMessage
+          : recommendationErrorMessage as String?,
     );
   }
 }
