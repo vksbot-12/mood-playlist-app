@@ -18,4 +18,12 @@ class HomeViewModel extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _repository.recommend(moodText));
   }
+
+  Future<String?> fetchShareContent() async {
+    final data = state.value;
+    final moodLogId = data?['data']?['moodLogId'];
+    if (moodLogId == null) return null;
+    final res = await _repository.fetchShareData(moodLogId as int);
+    return res['data']?['content']?.toString();
+  }
 }

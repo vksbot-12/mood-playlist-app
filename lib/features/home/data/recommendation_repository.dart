@@ -14,4 +14,9 @@ class RecommendationRepository {
     final res = await dio.get('/api/v1/recommendations/calendar', queryParameters: {'year': year, 'month': month});
     return res.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> fetchShareData(int moodLogId) async {
+    final res = await dio.get('/api/v1/recommendations/$moodLogId/share');
+    return res.data as Map<String, dynamic>;
+  }
 }
