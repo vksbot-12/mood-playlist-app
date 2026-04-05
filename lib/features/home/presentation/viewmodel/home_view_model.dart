@@ -5,6 +5,12 @@ import 'package:mood_playlist_app/features/home/data/recommendation_repository.d
 final apiClientProvider = Provider((_) => ApiClient(const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080')));
 final recommendationRepositoryProvider = Provider((ref) => RecommendationRepository(ref.watch(apiClientProvider).dio));
 
+final myQuotaProvider = FutureProvider<int?>((ref) async {
+  final repo = ref.watch(recommendationRepositoryProvider);
+  final res = await repo.fetchMyQuota();
+  return (res['data']?['freeRemaining'] as num?)?.toInt();
+});
+
 final homeViewModelProvider = StateNotifierProvider<HomeViewModel, AsyncValue<Map<String, dynamic>?>>(
   (ref) => HomeViewModel(ref.watch(recommendationRepositoryProvider)),
 );

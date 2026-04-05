@@ -17,6 +17,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
+    final quotaState = ref.watch(myQuotaProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('오늘의 감정')),
       body: Padding(
@@ -32,9 +34,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            quotaState.when(
+              data: (remaining) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  remaining == null ? '무료 잔여 횟수 확인 불가' : '현재 무료 잔여: $remaining회',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              loading: () => const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('무료 잔여 조회 중...'),
+              ),
+              error: (_, __) => const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('무료 잔여 조회 실패'),
+              ),
+            ),
+            const SizedBox(height: 12),
             FilledButton(
-              onPressed: () => ref.read(homeViewModelProvider.notifier).recommend(_controller.text),
+              onPressed: () async {
+                await ref.read(homeViewModelProvider.notifier).recommend(_controller.text);
+                ref.invalidate(myQuotaProvider);
+              },
               child: const Text('추천 받기'),
             ),
             const SizedBox(height: 8),

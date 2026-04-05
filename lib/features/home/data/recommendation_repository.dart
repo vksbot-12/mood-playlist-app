@@ -25,4 +25,9 @@ class RecommendationRepository {
     final res = await dio.get('/api/v1/recommendations/calendar/day', queryParameters: {'date': isoDate});
     return res.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> fetchMyQuota() async {
+    final res = await dio.get('/api/v1/quotas/me');
+    return res.data as Map<String, dynamic>;
+  }
 }
