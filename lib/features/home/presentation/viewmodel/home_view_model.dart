@@ -24,16 +24,29 @@ String mapRecommendationErrorMessage(String? code) {
   }
 }
 
+typedef RecommendCall = Future<Map<String, dynamic>> Function(String moodText);
+typedef FetchQuotaCall = Future<Map<String, dynamic>> Function();
+typedef FetchShareCall = Future<Map<String, dynamic>> Function(int moodLogId);
+
 class HomeViewModel extends StateNotifier<HomeUiState> {
-  HomeViewModel(this._repository)
-      : super(const HomeUiState(
+  HomeViewModel(
+    RecommendationRepository repository, {
+    RecommendCall? recommendCall,
+    FetchQuotaCall? fetchQuotaCall,
+    FetchShareCall? fetchShareCall,
+  })  : _recommendCall = recommendCall ?? repository.recommend,
+        _fetchQuotaCall = fetchQuotaCall ?? repository.fetchMyQuota,
+        _fetchShareCall = fetchShareCall ?? repository.fetchShareData,
+        super(const HomeUiState(
           recommendationState: AsyncValue.data(null),
           quotaState: AsyncValue.loading(),
           recommendationErrorCode: null,
           recommendationErrorMessage: null,
         ));
 
-  final RecommendationRepository _repository;
+  final RecommendCall _recommendCall;
+  final FetchQuotaCall _fetchQuotaCall;
+  final FetchShareCall _fetchShareCall;
 
   Future<void> initialize() async {
     await refreshQuota();
@@ -42,7 +55,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
   Future<void> refreshQuota() async {
     state = state.copyWith(quotaState: const AsyncValue.loading());
     final quotaState = await AsyncValue.guard(() async {
-      final res = await _repository.fetchMyQuota();
+      final res = await _fetchQuotaCall();
       return (res['data']?['freeRemaining'] as num?)?.toInt();
     });
     state = state.copyWith(quotaState: quotaState);
@@ -56,7 +69,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     );
 
     try {
-      final data = await _repository.recommend(moodText);
+      final data = await _recommendCall(moodText);
       state = state.copyWith(
         recommendationState: AsyncValue.data(data),
         recommendationErrorCode: null,
@@ -78,7 +91,7 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     final data = state.recommendationState.value;
     final moodLogId = data?['data']?['moodLogId'];
     if (moodLogId == null) return null;
-    final res = await _repository.fetchShareData(moodLogId as int);
+    final res = await _fetchShareCall(moodLogId as int);
     return res['data']?['content']?.toString();
   }
 
@@ -90,7 +103,6 @@ class HomeViewModel extends StateNotifier<HomeUiState> {
     }
     return null;
   }
-
 }
 
 class HomeUiState {

@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mood_playlist_app/features/home/data/recommendation_repository.dart';
 import 'package:mood_playlist_app/features/home/presentation/viewmodel/home_view_model.dart';
 
 void main() {
@@ -47,6 +49,55 @@ void main() {
 
       expect(updated.recommendationErrorCode, isNull);
       expect(updated.recommendationErrorMessage, isNull);
+    });
+  });
+
+  group('HomeViewModel.recommend', () {
+    final fakeRepo = RecommendationRepository(Dio());
+
+    test('updates recommendation and refreshes quota on success', () async {
+      final vm = HomeViewModel(
+        fakeRepo,
+        recommendCall: (_) async => {
+          'data': {'moodLogId': 10, 'candidates': []}
+        },
+        fetchQuotaCall: () async => {
+          'data': {'freeRemaining': 8}
+        },
+      );
+
+      await vm.recommend('행복해');
+
+      expect(vm.state.recommendationState.hasValue, isTrue);
+      expect(vm.state.recommendationState.value?['data']?['moodLogId'], 10);
+      expect(vm.state.quotaState.value, 8);
+      expect(vm.state.recommendationErrorCode, isNull);
+    });
+
+    test('maps api error code and still refreshes quota on failure', () async {
+      final vm = HomeViewModel(
+        fakeRepo,
+        recommendCall: (_) => throw DioException(
+          requestOptions: RequestOptions(path: '/api/v1/recommendations'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/v1/recommendations'),
+            statusCode: 400,
+            data: {
+              'error': {'code': 'BAD_STATE'}
+            },
+          ),
+        ),
+        fetchQuotaCall: () async => {
+          'data': {'freeRemaining': 0}
+        },
+      );
+
+      await vm.recommend('지침');
+
+      expect(vm.state.recommendationState.hasError, isTrue);
+      expect(vm.state.recommendationErrorCode, 'BAD_STATE');
+      expect(vm.state.recommendationErrorMessage, mapRecommendationErrorMessage('BAD_STATE'));
+      expect(vm.state.quotaState.value, 0);
     });
   });
 }
