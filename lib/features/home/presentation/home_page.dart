@@ -124,7 +124,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) {
                   final message = e.toString();
-                  final isQuotaExhausted = message.contains('quota exhausted');
+                  final isQuotaExhausted =
+                      state.recommendationErrorCode == 'BAD_STATE' && message.contains('quota exhausted');
 
                   return Center(
                     child: Column(
